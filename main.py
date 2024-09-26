@@ -40,14 +40,16 @@ def main(_, msg: Message):
     
     # Check permissions for both the user and the bot
     user = chat.get_member(msg.from_user.id)
-    if user.can_manage_chat and me.can_restrict_members and me.can_delete_messages:
+
+    # Check if user is an admin and bot has necessary permissions
+    if user.status in ["administrator", "creator"] and me.can_restrict_members and me.can_delete_messages:
         try:
             msg.reply(STARTED)
             count_kicks = 0
             
-            # Iterate over chat members and kick users without manage_chat permission
+            # Iterate over chat members and kick users without admin privileges
             for member in chat.iter_members():
-                if not member.can_manage_chat:
+                if member.status not in ["administrator", "creator"]:
                     app.kick_chat_member(chat.id, member.user.id)
                     count_kicks += 1
                     
