@@ -36,29 +36,27 @@ Then, send /kick in the group, and I'll begin my task.'''
 @app.on_message(filters.group & filters.command("kick"))
 def main(_, msg: Message):
     chat = msg.chat
-    me = app.get_chat_member(chat.id, app.get_me().id)
-    
-    # Check permissions for both the user and the bot
     user = chat.get_member(msg.from_user.id)
-
-    # Check if user is an admin and bot has necessary permissions
-    if user.status in ["administrator", "creator"] and me.can_restrict_members and me.can_delete_messages:
+    me = chat.get_member(app.get_me().id)
+    
+    # Print permissions for debugging
+    print(f"User Permissions: {user.status}, Can Manage Chat: {getattr(user, 'can_manage_chat', 'N/A')}")
+    print(f"Bot Permissions: {me.status}, Can Restrict Members: {me.can_restrict_members}, Can Delete Messages: {me.can_delete_messages}")
+    
+    if user.can_manage_chat and me.can_restrict_members and me.can_delete_messages:
         try:
-            msg.reply(STARTED)
+            msg.reply(STARTED.format(chat.members_count))
             count_kicks = 0
-            
-            # Iterate over chat members and kick users without admin privileges
             for member in chat.iter_members():
-                if member.status not in ["administrator", "creator"]:
-                    app.kick_chat_member(chat.id, member.user.id)
+                if not member.can_manage_chat:
+                    chat.kick_member(member.user.id)
                     count_kicks += 1
-                    
             msg.reply(FINISH.format(count_kicks))
-        
         except Exception as e:
             msg.reply(ERROR.format(str(e)))
     else:
         msg.reply(ADMIN_NEEDED)
+
 
 # Automatically delete service messages
 @app.on_message(filters.group & filters.service, group=2)
