@@ -36,26 +36,35 @@ Then, send /kick in the group, and I'll begin my task.'''
 @app.on_message(filters.group & filters.command("kick"))
 def main(_, msg: Message):
     chat = msg.chat
-    user = chat.get_member(msg.from_user.id)
-    me = chat.get_member(app.get_me().id)
+    user = chat.get_member(msg.from_user.id)  # Get the user who sent the command
+    me = chat.get_member(app.get_me().id)  # Get the bot's own member info
     
-    # Print permissions for debugging
-    print(f"User Permissions: {user.status}, Can Manage Chat: {getattr(user, 'can_manage_chat', 'N/A')}")
-    print(f"Bot Permissions: {me.status}, Can Restrict Members: {me.can_restrict_members}, Can Delete Messages: {me.can_delete_messages}")
-    
-    if user.can_manage_chat and me.can_restrict_members and me.can_delete_messages:
-        try:
-            msg.reply(STARTED.format(chat.members_count))
-            count_kicks = 0
-            for member in chat.iter_members():
-                if not member.can_manage_chat:
-                    chat.kick_member(member.user.id)
-                    count_kicks += 1
-            msg.reply(FINISH.format(count_kicks))
-        except Exception as e:
-            msg.reply(ERROR.format(str(e)))
+    # Check if the bot is admin and has the required privileges
+    if me.status in ["administrator", "creator"]:
+        bot_can_restrict = me.privileges.can_restrict_members if me.privileges else False
+        bot_can_delete = me.privileges.can_delete_messages if me.privileges else False
+        
+        # Print for debugging
+        print(f"Bot Permissions: Can Restrict Members: {bot_can_restrict}, Can Delete Messages: {bot_can_delete}")
+        
+        if user.status == "administrator" or user.status == "creator":
+            if bot_can_restrict and bot_can_delete:
+                try:
+                    msg.reply(STARTED.format(chat.members_count))
+                    count_kicks = 0
+                    for member in chat.iter_members():
+                        if member.status != "administrator" and member.status != "creator":
+                            chat.kick_member(member.user.id)
+                            count_kicks += 1
+                    msg.reply(FINISH.format(count_kicks))
+                except Exception as e:
+                    msg.reply(ERROR.format(str(e)))
+            else:
+                msg.reply(ADMIN_NEEDED)  # Bot lacks necessary permissions
+        else:
+            msg.reply(ADMIN_NEEDED)  # The user who triggered the command lacks permissions
     else:
-        msg.reply(ADMIN_NEEDED)
+        msg.reply(ADMIN_NEEDED)  # Bot is not an admin
 
 
 # Automatically delete service messages
