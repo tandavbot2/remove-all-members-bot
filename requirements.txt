@@ -1,5 +1,5 @@
-async-lru==1.0.2
+async-lru==2.0.0  # Upgraded version that supports async/await without deprecated coroutine
 pyaes==1.6.1
-Pyrogram==1.2.9
+Pyrogram==2.0.106  # Updated to the latest stable version as of 2024
 PySocks==1.7.1
 TgCrypto==1.2.2
